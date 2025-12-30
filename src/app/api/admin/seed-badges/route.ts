@@ -2,7 +2,7 @@ import { db } from "@/db"
 import { badges } from "@/db/schema"
 import { NextRequest, NextResponse } from "next/server"
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
     const defaultBadges = [
         { name: "Pionnier", description: "Publier son premier snippet", icon: "code", criteria: "SNIPPET_COUNT", threshold: 1 },
         { name: "Star du Code", description: "Recevoir 10 likes au total", icon: "heart", criteria: "LIKE_COUNT", threshold: 10 },
@@ -14,8 +14,9 @@ export async function POST(request: NextRequest) {
         for (const badge of defaultBadges) {
             await db.insert(badges).values(badge).onConflictDoNothing()
         }
-        return NextResponse.json({ message: "Badges initialisés" })
+        return NextResponse.json({ message: "Badges initialisés avec succès !" })
     } catch (error) {
+        console.error("Seed error:", error)
         return new NextResponse("Internal Error", { status: 500 })
     }
 }
