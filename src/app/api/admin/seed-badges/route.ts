@@ -1,6 +1,6 @@
-import { db } from "@/db"
-import { badges } from "@/db/schema"
 import { NextRequest, NextResponse } from "next/server"
+
+export const dynamic = "force-dynamic"
 
 export async function GET(request: NextRequest) {
     console.log("Seed badges request received");
