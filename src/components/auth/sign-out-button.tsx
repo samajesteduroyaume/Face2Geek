@@ -1,20 +1,14 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import { signOut } from "next-auth/react"
 
 import { Button } from "@/components/ui/button"
-import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 
 export function SignOutButton() {
-  const router = useRouter()
-
   const handleSignOut = async () => {
-    const supabase = createClient()
-
-    await supabase.auth.signOut()
+    await signOut({ callbackUrl: "/login" })
     toast.success("Déconnecté avec succès")
-    router.push("/login")
   }
 
   return (
@@ -23,3 +17,5 @@ export function SignOutButton() {
     </Button>
   )
 }
+
+

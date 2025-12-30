@@ -1,52 +1,52 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { signIn } from "next-auth/react"
 import Link from "next/link"
-
+import { Icons } from "@/components/icons"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Icons } from "@/components/icons"
-import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 
 export default function RegisterPage() {
-  const router = useRouter()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [githubLoading, setGithubLoading] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (password !== confirmPassword) {
-      toast.error("Les mots de passe ne correspondent pas")
-      return
-    }
-
+  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
     setIsLoading(true)
 
+    const formData = new FormData(event.currentTarget)
+    const email = formData.get("email") as string
+
     try {
-      const supabase = createClient()
-      const { error } = await supabase.auth.signUp({
+      const result = await signIn("email", {
         email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
+        redirect: false,
+        callbackUrl: "/dashboard"
       })
 
-      if (error) throw error
-
-      toast.success("Vérifie tes emails pour confirmer ton compte ✉️")
-      router.push("/login")
+      if (result?.error) {
+        toast.error("Erreur d'authentification")
+      } else {
+        toast.success("Un lien de connexion a été envoyé à votre email.")
+      }
     } catch (error) {
-      console.error(error)
-      toast.error("Erreur lors de la création du compte")
+      toast.error("Une erreur est survenue")
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const loginWithGithub = async () => {
+    setGithubLoading(true)
+    try {
+      await signIn("github", { callbackUrl: "/dashboard" })
+    } catch (error) {
+      toast.error("Erreur lors de la connexion avec GitHub")
+    } finally {
+      setGithubLoading(false)
     }
   }
 
@@ -54,73 +54,76 @@ export default function RegisterPage() {
     <div className="container flex h-screen w-screen flex-col items-center justify-center">
       <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
         <div className="flex flex-col space-y-2 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Créer un compte</h1>
+          <Icons.code className="mx-auto h-6 w-6" />
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Créer un compte
+          </h1>
           <p className="text-sm text-muted-foreground">
-            Entre ton email et un mot de passe pour rejoindre Face2Geek
+            Entrez votre email pour rejoindre la communauté
           </p>
         </div>
         <div className="grid gap-6">
-          <form onSubmit={handleSubmit} className="grid gap-4">
-            <div className="grid gap-1">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                autoComplete="email"
-                autoCapitalize="none"
-                autoCorrect="off"
-                disabled={isLoading}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+          <form onSubmit={onSubmit}>
+            <div className="grid gap-2">
+              <div className="grid gap-1">
+                <Label className="sr-only" htmlFor="email">
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  name="email"
+                  placeholder="nom@exemple.com"
+                  type="email"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  autoCorrect="off"
+                  disabled={isLoading || githubLoading}
+                  required
+                />
+              </div>
+              <Button disabled={isLoading || githubLoading}>
+                {isLoading && (
+                  <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                S&apos;inscrire avec Email
+              </Button>
             </div>
-            <div className="grid gap-1">
-              <Label htmlFor="password">Mot de passe</Label>
-              <Input
-                id="password"
-                type="password"
-                autoComplete="new-password"
-                disabled={isLoading}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                minLength={6}
-                required
-              />
-            </div>
-            <div className="grid gap-1">
-              <Label htmlFor="confirm-password">Confirme le mot de passe</Label>
-              <Input
-                id="confirm-password"
-                type="password"
-                autoComplete="new-password"
-                disabled={isLoading}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                minLength={6}
-                required
-              />
-            </div>
-            <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading && (
-                <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              Créer un compte
-            </Button>
           </form>
-
-          <p className="px-8 text-center text-sm text-muted-foreground">
-            Tu as déjà un compte ?{" "}
-            <Link
-              href="/login"
-              className="underline underline-offset-4 hover:text-primary"
-            >
-              Se connecter
-            </Link>
-          </p>
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                Ou continuer avec
+              </span>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            type="button"
+            disabled={isLoading || githubLoading}
+            onClick={loginWithGithub}
+          >
+            {githubLoading ? (
+              <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Icons.gitHub className="mr-2 h-4 w-4" />
+            )}{" "}
+            GitHub
+          </Button>
         </div>
+        <p className="px-8 text-center text-sm text-muted-foreground">
+          <Link
+            href="/login"
+            className="hover:text-brand underline underline-offset-4"
+          >
+            Déjà un compte ? Se connecter
+          </Link>
+        </p>
       </div>
     </div>
   )
 }
+
+
