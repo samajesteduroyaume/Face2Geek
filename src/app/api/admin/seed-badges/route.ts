@@ -17,9 +17,11 @@ export async function GET(request: NextRequest) {
         for (const badge of defaultBadges) {
             await db.insert(badges).values(badge).onConflictDoNothing()
         }
-        return NextResponse.json({ message: "Badges initialisés avec succès !" })
-    } catch (error) {
+    } catch (error: any) {
         console.error("Seed error:", error)
-        return new NextResponse("Internal Error", { status: 500 })
+        return NextResponse.json({
+            error: "Erreur lors de l'initialisation",
+            details: error.message || error
+        }, { status: 500 })
     }
 }
